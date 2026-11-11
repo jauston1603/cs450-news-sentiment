@@ -12,3 +12,6 @@ __pycache__/
 
 # jupyterlab artifact
 .virtual_documents/
+
+# JetBrains IDE settings
+.idea/
