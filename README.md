@@ -14,27 +14,25 @@ Jason Auston, Brianna Garcia, Anthony Nguyen, Maggi Savajiyani, Harish Raaj Siva
 ## Setup
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Note: `pyarrow` is intentionally absent. All parquet I/O goes through DuckDB, which
-bundles its own reader/writer. `pandas.read_parquet` / `to_parquet` are not used.
+`pyarrow` is intentionally absent. All parquet I/O goes through DuckDB, which bundles
+its own reader and writer. `pandas.read_parquet` and `to_parquet` are not used, because
+pyarrow is broken in our Anaconda environment (`liborc.dylib` expects a protobuf symbol
+the installed `libprotobuf` does not export).
 
 ## Reproducing
 
-Scripts run in order. Steps 1-4 are only needed to rebuild from raw data; the
-derived files are committed, so `06` and `07` run immediately after a clone.
+The derived data files are committed, so the full analysis runs immediately after a
+clone. No 800 MB download, no GPU, no FinBERT pass.
 
 ```bash
-python src/01_download.py    # fetch FNSPID shards (800 MB, not in repo)
-python src/02_clean.py       # filter, dedupe -> data/news_working.parquet
-python src/03_prices.py      # yfinance -> data/returns.parquet
-python src/04_sentiment.py   # FinBERT -> data/sentiment.parquet  (GPU/MPS recommended)
-python src/05_join.py        # asof join -> data/panel.parquet, data/ticker_day.parquet
-python src/06_analysis.py    # correlations, OLS
-python src/07_figures.py     # -> figs/
+python src/phase3_analysis.py    # prints every result, writes figs/
 ```
+
+Or open `phase3.ipynb`, which runs the same analysis with the narrative alongside it.
+Both locate the repo root automatically, so either can be run from anywhere.
 
 ## Committed data
 
@@ -44,15 +42,24 @@ python src/07_figures.py     # -> figs/
 | `data/panel.parquet` | 113,075 | article joined to its trading day and forward return |
 | `data/sentiment.parquet` | 83,470 | FinBERT scores per unique headline |
 | `data/returns.parquet` | 29,555 | next-day close-to-close return per ticker-day |
-| `data/ticker_day.parquet` | 21,895 | aggregated signal + label, analysis-ready |
+| `data/ticker_day.parquet` | 21,895 | aggregated signal and label, analysis-ready |
+
+The raw FNSPID shards (800 MB) are not redistributed. See DATA.md.
 
 ## Alignment rule
 
-Each article's publication date D maps to T0, the most recent trading day at or
-before D. The label is the return from close(T0) to the next trading day's close.
-FNSPID timestamps are effectively date-only (99.7% are 00:00 UTC), so this is the
-conservative choice: an article published during a session cannot be credited with
-that session's move.
+Each article's publication date D maps to T0, the most recent trading day at or before D.
+The label is the return from close(T0) to the next trading day's close. FNSPID timestamps
+are effectively date-only (99.7% are 00:00 UTC), so this is the conservative choice: an
+article published during a session cannot be credited with that session's move.
+
+## Key results
+
+- Direction is not predictable at a daily horizon. Pearson −0.0042; direction agreement
+  50.97% against a 52.01% always-up baseline.
+- News **volume** predicts move **magnitude**. log1p(articles) vs next-day absolute
+  return, r = +0.1364, p = 1.9e−91, monotonic across four volume buckets.
+- The effect survives controlling for trailing 20-day realised volatility (t = 12.0).
 
 ## Data license
 
