@@ -1,0 +1,11 @@
+# raw FNSPID shards - 800 MB, not redistributed (see DATA.md)
+data/train-*.parquet
+
+# regenerable / version-fragile
+*.pkl
+
+# python / jupyter noise
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store

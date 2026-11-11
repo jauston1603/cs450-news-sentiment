@@ -1,0 +1,9 @@
+duckdb>=2.0
+pandas>=2.2
+numpy>=1.26
+scipy>=1.11
+statsmodels>=0.14
+matplotlib>=3.8
+yfinance>=1.8
+torch>=2.2
+transformers>=5.0
